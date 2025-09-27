@@ -1,15 +1,31 @@
-use axum::body::Body;
-use axum::http::{Request, StatusCode};
-use http_body_util::BodyExt;
-use tower::ServiceExt;
-use backend::app;
+use std::sync::Arc;
 
-#[tokio::test]
-async fn test_hello_world() {
-    let app = app();
+use axum::body::Body;
+use axum::http::Request;
+use axum::http::StatusCode;
+use backend::ApiContext;
+use backend::SqliteRegionRepository;
+use backend::app;
+use http_body_util::BodyExt;
+use sqlx::SqlitePool;
+use tower::ServiceExt;
+
+fn setup_api_context(pool: SqlitePool) -> ApiContext {
+    let region_repository = Arc::new(SqliteRegionRepository::new(pool));
+    ApiContext { region_repository }
+}
+
+#[sqlx::test]
+async fn test_hello_world(pool: SqlitePool) {
+    let app = app(setup_api_context(pool));
 
     let response = app
-        .oneshot(Request::builder().uri("/hello_world").body(Body::empty()).unwrap())
+        .oneshot(
+            Request::builder()
+                .uri("/hello_world")
+                .body(Body::empty())
+                .unwrap(),
+        )
         .await
         .unwrap();
 
