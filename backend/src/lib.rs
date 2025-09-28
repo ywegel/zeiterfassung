@@ -2,20 +2,25 @@
 
 pub mod configuration;
 mod db;
+mod error;
 mod models;
 mod repositories;
 mod routes;
 
 use std::sync::Arc;
 
-use axum::Extension;
 use axum::Router;
+use axum::routing::get;
+use axum::routing::post;
 use tower_http::services::ServeDir;
 use tower_http::services::ServeFile;
 
 pub use crate::db::connect_to_database;
 pub use crate::repositories::region_repositories::RegionRepository;
 pub use crate::repositories::region_repositories::SqliteRegionRepository;
+use crate::routes::history;
+use crate::routes::start_timer;
+use crate::routes::stop_timer;
 
 #[derive(Clone)]
 pub struct ApiContext {
@@ -28,6 +33,9 @@ pub fn app(api_context: ApiContext) -> Router {
 
     Router::new()
         .route("/hello_world", axum::routing::get(routes::hello_world))
-        .layer(Extension(api_context))
+        .route("/api/{region}/start", post(start_timer))
+        .route("/api/{region}/stop", post(stop_timer))
+        .route("/api/{region}/history", get(history))
+        .with_state(api_context)
         .fallback_service(static_frontend_files)
 }

@@ -8,10 +8,8 @@ use crate::models::region_history::RegionHistory;
 
 #[derive(thiserror::Error, Debug)]
 pub enum RepositoryError {
-    #[error("A timer is already running")]
-    AlreadyRunning,
     #[error("No timer is running for the region")]
-    NotRunning,
+    TimerNotRunning,
     #[error("Database error: {0}")]
     DatabaseError(#[from] sqlx::Error),
 }
@@ -84,7 +82,7 @@ impl RegionRepository for SqliteRegionRepository {
 
         match result {
             Some((start_time,)) => Ok(now.signed_duration_since(start_time).num_seconds()),
-            None => Err(RepositoryError::NotRunning),
+            None => Err(RepositoryError::TimerNotRunning),
         }
     }
 
@@ -106,7 +104,7 @@ impl RegionRepository for SqliteRegionRepository {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
 
     #[sqlx::test]
@@ -278,7 +276,7 @@ mod test {
 
         // Then
         assert!(
-            matches!(result, Err(RepositoryError::NotRunning)),
+            matches!(result, Err(RepositoryError::TimerNotRunning)),
             "Should fail with NotRunning error"
         );
 

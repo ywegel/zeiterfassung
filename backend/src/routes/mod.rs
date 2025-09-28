@@ -1,9 +1,53 @@
+use axum::Json;
+use axum::extract::Path;
+use axum::extract::State;
+
+use crate::ApiContext;
+use crate::error::AppError;
+use crate::models::region::Region;
+use crate::models::region_history::RegionHistory;
+
 pub async fn hello_world() -> &'static str {
     "Hello, World!"
 }
 
-#[tokio::test]
-async fn test_hello_world_handler() {
-    let result = hello_world().await;
-    assert_eq!(result, "Hello, World!");
+#[axum_macros::debug_handler]
+pub async fn start_timer(
+    Path(region): Path<Region>,
+    State(context): State<ApiContext>,
+) -> Result<(), AppError> {
+    let result = context.region_repository.start_timer(region).await?;
+    Ok(result)
+}
+
+#[derive(serde::Serialize)]
+pub struct StopTimerResponse {
+    duration: i64,
+}
+
+pub async fn stop_timer(
+    Path(region): Path<Region>,
+    State(context): State<ApiContext>,
+) -> Result<Json<StopTimerResponse>, AppError> {
+    let duration = context.region_repository.stop_timer(region).await?;
+    Ok(Json(StopTimerResponse { duration }))
+}
+
+pub async fn history(
+    Path(region): Path<Region>,
+    State(context): State<ApiContext>,
+) -> Result<Json<Vec<RegionHistory>>, AppError> {
+    let region_history = context.region_repository.get_history(region).await?;
+    Ok(Json(region_history))
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::routes::hello_world;
+
+    #[tokio::test]
+    async fn test_hello_world_handler() {
+        let result = hello_world().await;
+        assert_eq!(result, "Hello, World!");
+    }
 }
