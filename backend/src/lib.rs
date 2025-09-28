@@ -18,6 +18,7 @@ use tower_http::services::ServeFile;
 pub use crate::db::connect_to_database;
 pub use crate::repositories::region_repositories::RegionRepository;
 pub use crate::repositories::region_repositories::SqliteRegionRepository;
+use crate::routes::currently_active;
 use crate::routes::history;
 use crate::routes::start_timer;
 use crate::routes::stop_timer;
@@ -36,6 +37,7 @@ pub fn app(api_context: ApiContext) -> Router {
         .route("/api/{region}/start", post(start_timer))
         .route("/api/{region}/stop", post(stop_timer))
         .route("/api/{region}/history", get(history))
+        .route("/api/currently_active", get(currently_active))
         .with_state(api_context)
         .fallback_service(static_frontend_files)
 }

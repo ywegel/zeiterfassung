@@ -12,6 +12,7 @@ use chrono::Utc;
 use http_body_util::BodyExt;
 use serde_json::Value;
 use sqlx::SqlitePool;
+use sqlx::types::JsonValue;
 use tower::ServiceExt;
 
 use crate::utils::RouterExt;
@@ -59,6 +60,7 @@ async fn test_start_timer(pool: SqlitePool) {
             Request::builder()
                 .uri("/api/north/start")
                 .method("POST")
+                .header("Content-Type", "application/json")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -96,6 +98,7 @@ async fn test_stop_timer(pool: SqlitePool) {
         Request::builder()
             .uri("/api/north/start")
             .method("POST")
+            .header("Content-Type", "application/json")
             .body(Body::empty())
             .unwrap(),
     )
@@ -111,6 +114,7 @@ async fn test_stop_timer(pool: SqlitePool) {
             Request::builder()
                 .uri("/api/north/stop")
                 .method("POST")
+                .header("Content-Type", "application/json")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -155,6 +159,7 @@ async fn test_stop_timer_when_no_time_was_started(pool: SqlitePool) {
             Request::builder()
                 .uri("/api/north/stop")
                 .method("POST")
+                .header("Content-Type", "application/json")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -235,6 +240,7 @@ async fn test_history_returns_a_started_timer(pool: SqlitePool) {
         Request::builder()
             .uri("/api/north/start")
             .method("POST")
+            .header("Content-Type", "application/json")
             .body(Body::empty())
             .unwrap(),
     )
@@ -276,6 +282,7 @@ async fn test_history_returns_a_stopped_timer(pool: SqlitePool) {
         Request::builder()
             .uri("/api/north/start")
             .method("POST")
+            .header("Content-Type", "application/json")
             .body(Body::empty())
             .unwrap(),
     )
@@ -289,6 +296,7 @@ async fn test_history_returns_a_stopped_timer(pool: SqlitePool) {
         Request::builder()
             .uri("/api/north/stop")
             .method("POST")
+            .header("Content-Type", "application/json")
             .body(Body::empty())
             .unwrap(),
     )
@@ -320,4 +328,113 @@ async fn test_history_returns_a_stopped_timer(pool: SqlitePool) {
     assert!(history[0].stop_time.unwrap() > history[0].start_time);
     assert!(history[0].duration.is_some());
     assert!(history[0].duration.unwrap() >= 1);
+}
+
+#[sqlx::test]
+async fn test_currently_active_timer_when_no_timer_exists(pool: SqlitePool) {
+    let app = app(setup_api_context(pool));
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/api/currently_active")
+                .method("GET")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // Then: response
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let history = serde_json::from_slice::<Value>(body.iter().as_slice()).unwrap();
+    assert_eq!(history["region"], JsonValue::Null);
+    assert_eq!(history["duration"], JsonValue::Null);
+}
+
+#[sqlx::test]
+async fn test_currently_active_timer_when_none_is_active(pool: SqlitePool) {
+    // Given
+    let mut app = app(setup_api_context(pool));
+
+    app.call_request(
+        Request::builder()
+            .uri("/api/north/start")
+            .method("POST")
+            .header("Content-Type", "application/json")
+            .body(Body::empty())
+            .unwrap(),
+    )
+    .await;
+
+    // We need to wait for more than 1s, as the duration calculated by sqlite is in
+    // seconds
+    tokio::time::sleep(std::time::Duration::from_millis(1100)).await;
+
+    app.call_request(
+        Request::builder()
+            .uri("/api/north/stop")
+            .method("POST")
+            .header("Content-Type", "application/json")
+            .body(Body::empty())
+            .unwrap(),
+    )
+    .await;
+
+    // When
+    let response = app
+        .call_request(
+            Request::builder()
+                .uri("/api/currently_active")
+                .method("GET")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+
+    // Then: response
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let history = serde_json::from_slice::<Value>(body.iter().as_slice()).unwrap();
+    assert_eq!(history["region"], JsonValue::Null);
+    assert_eq!(history["duration"], JsonValue::Null);
+}
+
+#[sqlx::test]
+async fn test_currently_active_timer_when_timer_is_active(pool: SqlitePool) {
+    // Given
+    let mut app = app(setup_api_context(pool));
+
+    app.call_request(
+        Request::builder()
+            .uri("/api/north/start")
+            .method("POST")
+            .header("Content-Type", "application/json")
+            .body(Body::empty())
+            .unwrap(),
+    )
+    .await;
+
+    // We need to wait for more than 1s, as the duration calculated by sqlite is in
+    // seconds
+    tokio::time::sleep(std::time::Duration::from_millis(1100)).await;
+
+    // When
+    let response = app
+        .call_request(
+            Request::builder()
+                .uri("/api/currently_active")
+                .method("GET")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+
+    // Then: response
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let history = serde_json::from_slice::<Value>(body.iter().as_slice()).unwrap();
+    assert_eq!(history["region"], "north");
+    assert_eq!(history["duration"], 1)
 }

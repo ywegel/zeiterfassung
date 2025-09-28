@@ -11,3 +11,18 @@ pub enum Region {
     East,
     West,
 }
+
+#[derive(Debug, Serialize)]
+pub struct CurrentlyActiveRegion {
+    pub region: Option<Region>,
+    pub duration: Option<i64>,
+}
+
+impl CurrentlyActiveRegion {
+    pub fn nothing_active() -> CurrentlyActiveRegion {
+        CurrentlyActiveRegion {
+            region: None,
+            duration: None,
+        }
+    }
+}

@@ -4,6 +4,7 @@ use axum::extract::State;
 
 use crate::ApiContext;
 use crate::error::AppError;
+use crate::models::region::CurrentlyActiveRegion;
 use crate::models::region::Region;
 use crate::models::region_history::RegionHistory;
 
@@ -39,6 +40,13 @@ pub async fn history(
 ) -> Result<Json<Vec<RegionHistory>>, AppError> {
     let region_history = context.region_repository.get_history(region).await?;
     Ok(Json(region_history))
+}
+
+pub async fn currently_active(
+    State(context): State<ApiContext>,
+) -> Result<Json<CurrentlyActiveRegion>, AppError> {
+    let result = context.region_repository.currently_active_timer().await?;
+    Ok(Json(result))
 }
 
 #[cfg(test)]

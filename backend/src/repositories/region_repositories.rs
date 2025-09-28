@@ -3,6 +3,7 @@ use chrono::DateTime;
 use chrono::Utc;
 use sqlx::SqlitePool;
 
+use crate::models::region::CurrentlyActiveRegion;
 use crate::models::region::Region;
 use crate::models::region_history::RegionHistory;
 
@@ -19,6 +20,7 @@ pub trait RegionRepository: Send + Sync {
     async fn start_timer(&self, region: Region) -> Result<(), RepositoryError>;
     async fn stop_timer(&self, region: Region) -> Result<i64, RepositoryError>;
     async fn get_history(&self, region: Region) -> Result<Vec<RegionHistory>, RepositoryError>;
+    async fn currently_active_timer(&self) -> Result<CurrentlyActiveRegion, RepositoryError>;
 }
 
 pub struct SqliteRegionRepository {
@@ -87,7 +89,7 @@ impl RegionRepository for SqliteRegionRepository {
     }
 
     async fn get_history(&self, region: Region) -> Result<Vec<RegionHistory>, RepositoryError> {
-        let result = sqlx::query_as::<_, RegionHistory>(
+        let result: Vec<RegionHistory> = sqlx::query_as(
             r#"
             SELECT region, start_time, stop_time, duration
             FROM region_history
@@ -100,6 +102,34 @@ impl RegionRepository for SqliteRegionRepository {
         .await?;
 
         Ok(result)
+    }
+
+    async fn currently_active_timer(&self) -> Result<CurrentlyActiveRegion, RepositoryError> {
+        let now = Utc::now();
+        let result: Option<(Region, DateTime<Utc>)> = sqlx::query_as(
+            r#"
+            SELECT region, start_time
+            FROM region_history
+            WHERE stop_time is NULL
+        "#,
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        let active_region = match result {
+            Option::None => CurrentlyActiveRegion::nothing_active(),
+            Option::Some((region, start_time)) => {
+                let difference = now - start_time;
+                let seconds = difference.num_seconds();
+
+                CurrentlyActiveRegion {
+                    region: Some(region),
+                    duration: Some(seconds),
+                }
+            }
+        };
+
+        Ok(active_region)
     }
 }
 
