@@ -8,6 +8,8 @@
 
 	let activeRegion: Region | null = $state(null);
 
+	let lastStopped: { region: Region; duration: number } | null = $state(null);
+
 	async function startTimer(region: Region) {
 		if (activeRegion !== null) {
 			alert("Another timer is already running. Stop it first.");
@@ -44,6 +46,7 @@
 
 			const data = await response.json();
 			console.log("Stop response:", data);
+			lastStopped = { region, duration: data.duration };
 			activeRegion = null;
 		} catch (error) {
 			console.error("Error stopping timer:", error);
@@ -99,4 +102,10 @@
 			South
 		</button>
 	</div>
+	{#if lastStopped}
+		<div class="mt-6 text-lg text-gray-800">
+			Last stopped: {lastStopped.region.charAt(0).toUpperCase() +
+				lastStopped.region.slice(1)}, Duration: {lastStopped.duration} seconds
+		</div>
+	{/if}
 </div>
