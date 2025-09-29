@@ -19,7 +19,10 @@ pub enum RepositoryError {
 pub trait RegionRepository: Send + Sync {
     async fn start_timer(&self, region: Region) -> Result<(), RepositoryError>;
     async fn stop_timer(&self, region: Region) -> Result<i64, RepositoryError>;
-    async fn get_history(&self, region: Region) -> Result<Vec<RegionHistory>, RepositoryError>;
+    async fn get_history_by_region(
+        &self,
+        region: Region,
+    ) -> Result<Vec<RegionHistory>, RepositoryError>;
     async fn currently_active_timer(&self) -> Result<CurrentlyActiveRegion, RepositoryError>;
 }
 
@@ -88,7 +91,10 @@ impl RegionRepository for SqliteRegionRepository {
         }
     }
 
-    async fn get_history(&self, region: Region) -> Result<Vec<RegionHistory>, RepositoryError> {
+    async fn get_history_by_region(
+        &self,
+        region: Region,
+    ) -> Result<Vec<RegionHistory>, RepositoryError> {
         let result: Vec<RegionHistory> = sqlx::query_as(
             r#"
             SELECT region, start_time, stop_time, duration
@@ -148,7 +154,7 @@ mod tests {
 
         // Then
         let history = repo
-            .get_history(Region::North)
+            .get_history_by_region(Region::North)
             .await
             .expect("History should succeed");
         assert_eq!(history.len(), 1, "History should contain one entry");
@@ -175,7 +181,7 @@ mod tests {
 
         // The previous timer should have stopped
         let north_history = repo
-            .get_history(Region::North)
+            .get_history_by_region(Region::North)
             .await
             .expect("History should succeed");
         assert_eq!(
@@ -221,7 +227,7 @@ mod tests {
         // Then
         // Verify the previous timer (North) was stopped
         let north_history = repo
-            .get_history(Region::North)
+            .get_history_by_region(Region::North)
             .await
             .expect("History should succeed");
         assert_eq!(
@@ -240,7 +246,7 @@ mod tests {
 
         // Verify the new timer (South) is running
         let south_history = repo
-            .get_history(Region::South)
+            .get_history_by_region(Region::South)
             .await
             .expect("History should succeed");
         assert_eq!(
@@ -285,7 +291,7 @@ mod tests {
 
         // Verify the timer was stopped
         let history = repo
-            .get_history(Region::East)
+            .get_history_by_region(Region::East)
             .await
             .expect("History should succeed");
         assert_eq!(history.len(), 1, "History should contain one entry");
@@ -312,7 +318,7 @@ mod tests {
 
         // History should stay empty
         let history = repo
-            .get_history(Region::West)
+            .get_history_by_region(Region::North)
             .await
             .expect("History should succeed");
         assert!(history.is_empty(), "History should be empty");
@@ -321,7 +327,7 @@ mod tests {
     }
 
     #[sqlx::test]
-    async fn test_get_history_for_region(pool: SqlitePool) -> sqlx::Result<()> {
+    async fn test_get_history_by_region(pool: SqlitePool) -> sqlx::Result<()> {
         // Given
         let repo = SqliteRegionRepository::new(pool);
 
@@ -335,7 +341,7 @@ mod tests {
 
         // When
         let history = repo
-            .get_history(Region::West)
+            .get_history_by_region(Region::West)
             .await
             .expect("Fetching the history should succeed");
 

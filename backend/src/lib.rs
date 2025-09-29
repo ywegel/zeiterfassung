@@ -19,7 +19,7 @@ pub use crate::db::connect_to_database;
 pub use crate::repositories::region_repositories::RegionRepository;
 pub use crate::repositories::region_repositories::SqliteRegionRepository;
 use crate::routes::currently_active;
-use crate::routes::history;
+use crate::routes::history_by_region;
 use crate::routes::start_timer;
 use crate::routes::stop_timer;
 
@@ -36,7 +36,7 @@ pub fn app(api_context: ApiContext) -> Router {
         .route("/hello_world", axum::routing::get(routes::hello_world))
         .route("/api/{region}/start", post(start_timer))
         .route("/api/{region}/stop", post(stop_timer))
-        .route("/api/{region}/history", get(history))
+        .route("/api/{region}/history", get(history_by_region))
         .route("/api/currently_active", get(currently_active))
         .with_state(api_context)
         .fallback_service(static_frontend_files)

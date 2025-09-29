@@ -186,6 +186,7 @@ async fn test_stop_timer_when_no_time_was_started(pool: SqlitePool) {
 // TODO: test what happens, if we start a timer while another timer for another
 // region is running
 
+// TODO: Test the general history route, instead of the region history route
 #[sqlx::test]
 async fn test_history_is_empty_if_no_timer_ever_existed(pool: SqlitePool) {
     // Cloning the pool results in a new pool that is tied to the same shared
@@ -233,7 +234,7 @@ pub struct TestRegionHistory {
 }
 
 #[sqlx::test]
-async fn test_history_returns_a_started_timer(pool: SqlitePool) {
+async fn test_history_by_region_returns_a_started_timer(pool: SqlitePool) {
     let mut app = app(setup_api_context(pool));
 
     app.call_request(
@@ -275,7 +276,7 @@ async fn test_history_returns_a_started_timer(pool: SqlitePool) {
 }
 
 #[sqlx::test]
-async fn test_history_returns_a_stopped_timer(pool: SqlitePool) {
+async fn test_history_by_region_returns_a_stopped_timer(pool: SqlitePool) {
     let mut app = app(setup_api_context(pool));
 
     app.call_request(

@@ -34,11 +34,14 @@ pub async fn stop_timer(
     Ok(Json(StopTimerResponse { duration }))
 }
 
-pub async fn history(
+pub async fn history_by_region(
     Path(region): Path<Region>,
     State(context): State<ApiContext>,
 ) -> Result<Json<Vec<RegionHistory>>, AppError> {
-    let region_history = context.region_repository.get_history(region).await?;
+    let region_history = context
+        .region_repository
+        .get_history_by_region(region)
+        .await?;
     Ok(Json(region_history))
 }
 
