@@ -6,10 +6,12 @@ use sqlx::Type;
 #[serde(rename_all = "lowercase")]
 #[sqlx(type_name = "TEXT", rename_all = "lowercase")]
 pub enum Region {
-    North,
-    South,
-    East,
-    West,
+    Aa1,
+    Aa2,
+    Aa3,
+    Ac1,
+    Ac2,
+    Ac3,
 }
 
 #[derive(Debug, Serialize)]

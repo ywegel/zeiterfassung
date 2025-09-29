@@ -58,7 +58,7 @@ async fn test_start_timer(pool: SqlitePool) {
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/api/north/start")
+                .uri("/api/ac1/start")
                 .method("POST")
                 .header("Content-Type", "application/json")
                 .body(Body::empty())
@@ -72,14 +72,14 @@ async fn test_start_timer(pool: SqlitePool) {
 
     // Then: Internal state
     let history = sqlx::query!(
-        "SELECT region, start_time, stop_time FROM region_history WHERE region = 'north'"
+        "SELECT region, start_time, stop_time FROM region_history WHERE region = 'ac1'"
     )
     .fetch_all(&pool)
     .await
     .unwrap();
 
     assert_eq!(history.len(), 1);
-    assert_eq!(history[0].region, "north");
+    assert_eq!(history[0].region, "ac1");
     assert!(history[0].stop_time.is_none());
     assert!(history[0].start_time.len() > 0);
 }
@@ -96,7 +96,7 @@ async fn test_stop_timer(pool: SqlitePool) {
 
     app.call_request(
         Request::builder()
-            .uri("/api/north/start")
+            .uri("/api/ac1/start")
             .method("POST")
             .header("Content-Type", "application/json")
             .body(Body::empty())
@@ -112,7 +112,7 @@ async fn test_stop_timer(pool: SqlitePool) {
     let response = app
         .call_request(
             Request::builder()
-                .uri("/api/north/stop")
+                .uri("/api/ac1/stop")
                 .method("POST")
                 .header("Content-Type", "application/json")
                 .body(Body::empty())
@@ -129,14 +129,14 @@ async fn test_stop_timer(pool: SqlitePool) {
 
     // Then: Internal state
     let history = sqlx::query!(
-        "SELECT region, start_time, stop_time, duration FROM region_history WHERE region = 'north'"
+        "SELECT region, start_time, stop_time, duration FROM region_history WHERE region = 'ac1'"
     )
     .fetch_all(&pool)
     .await
     .unwrap();
 
     assert_eq!(history.len(), 1);
-    assert_eq!(history[0].region, "north");
+    assert_eq!(history[0].region, "ac1");
     assert!(history[0].stop_time.is_some());
     assert!(history[0].start_time.len() > 0);
     assert!(history[0].duration.is_some());
@@ -157,7 +157,7 @@ async fn test_stop_timer_when_no_time_was_started(pool: SqlitePool) {
     let response = app
         .call_request(
             Request::builder()
-                .uri("/api/north/stop")
+                .uri("/api/ac1/stop")
                 .method("POST")
                 .header("Content-Type", "application/json")
                 .body(Body::empty())
@@ -172,7 +172,7 @@ async fn test_stop_timer_when_no_time_was_started(pool: SqlitePool) {
 
     // Then: Internal state
     let history = sqlx::query!(
-        "SELECT region, start_time, stop_time, duration FROM region_history WHERE region = 'north'"
+        "SELECT region, start_time, stop_time, duration FROM region_history WHERE region = 'ac1'"
     )
     .fetch_all(&pool)
     .await
@@ -201,7 +201,7 @@ async fn test_history_is_empty_if_no_timer_ever_existed(pool: SqlitePool) {
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/api/north/history")
+                .uri("/api/ac1/history")
                 .method("GET")
                 .body(Body::empty())
                 .unwrap(),
@@ -217,7 +217,7 @@ async fn test_history_is_empty_if_no_timer_ever_existed(pool: SqlitePool) {
 
     // Then: Internal state
     let history = sqlx::query!(
-        "SELECT region, start_time, stop_time, duration FROM region_history WHERE region = 'north'"
+        "SELECT region, start_time, stop_time, duration FROM region_history WHERE region = 'ac1'"
     )
     .fetch_all(&pool)
     .await
@@ -239,7 +239,7 @@ async fn test_history_by_region_returns_a_started_timer(pool: SqlitePool) {
 
     app.call_request(
         Request::builder()
-            .uri("/api/north/start")
+            .uri("/api/ac1/start")
             .method("POST")
             .header("Content-Type", "application/json")
             .body(Body::empty())
@@ -251,7 +251,7 @@ async fn test_history_by_region_returns_a_started_timer(pool: SqlitePool) {
     let response = app
         .call_request(
             Request::builder()
-                .uri("/api/north/history")
+                .uri("/api/ac1/history")
                 .method("GET")
                 .body(Body::empty())
                 .unwrap(),
@@ -263,7 +263,7 @@ async fn test_history_by_region_returns_a_started_timer(pool: SqlitePool) {
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let history = serde_json::from_slice::<Vec<TestRegionHistory>>(body.iter().as_slice()).unwrap();
     assert_eq!(history.len(), 1);
-    assert_eq!(history[0].region, "north");
+    assert_eq!(history[0].region, "ac1");
     assert!(history[0].start_time < Utc::now());
     assert!(
         history[0].start_time
@@ -281,7 +281,7 @@ async fn test_history_by_region_returns_a_stopped_timer(pool: SqlitePool) {
 
     app.call_request(
         Request::builder()
-            .uri("/api/north/start")
+            .uri("/api/ac1/start")
             .method("POST")
             .header("Content-Type", "application/json")
             .body(Body::empty())
@@ -295,7 +295,7 @@ async fn test_history_by_region_returns_a_stopped_timer(pool: SqlitePool) {
 
     app.call_request(
         Request::builder()
-            .uri("/api/north/stop")
+            .uri("/api/ac1/stop")
             .method("POST")
             .header("Content-Type", "application/json")
             .body(Body::empty())
@@ -307,7 +307,7 @@ async fn test_history_by_region_returns_a_stopped_timer(pool: SqlitePool) {
     let response = app
         .call_request(
             Request::builder()
-                .uri("/api/north/history")
+                .uri("/api/ac1/history")
                 .method("GET")
                 .body(Body::empty())
                 .unwrap(),
@@ -320,7 +320,7 @@ async fn test_history_by_region_returns_a_stopped_timer(pool: SqlitePool) {
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let history = serde_json::from_slice::<Vec<TestRegionHistory>>(body.iter().as_slice()).unwrap();
     assert_eq!(history.len(), 1);
-    assert_eq!(history[0].region, "north");
+    assert_eq!(history[0].region, "ac1");
     assert!(history[0].start_time < now);
     assert!(history[0].start_time > now.checked_sub_signed(TimeDelta::seconds(5)).unwrap());
     assert!(history[0].stop_time.is_some());
@@ -361,7 +361,7 @@ async fn test_currently_active_timer_when_none_is_active(pool: SqlitePool) {
 
     app.call_request(
         Request::builder()
-            .uri("/api/north/start")
+            .uri("/api/ac1/start")
             .method("POST")
             .header("Content-Type", "application/json")
             .body(Body::empty())
@@ -375,7 +375,7 @@ async fn test_currently_active_timer_when_none_is_active(pool: SqlitePool) {
 
     app.call_request(
         Request::builder()
-            .uri("/api/north/stop")
+            .uri("/api/ac1/stop")
             .method("POST")
             .header("Content-Type", "application/json")
             .body(Body::empty())
@@ -409,7 +409,7 @@ async fn test_currently_active_timer_when_timer_is_active(pool: SqlitePool) {
 
     app.call_request(
         Request::builder()
-            .uri("/api/north/start")
+            .uri("/api/ac1/start")
             .method("POST")
             .header("Content-Type", "application/json")
             .body(Body::empty())
@@ -436,6 +436,6 @@ async fn test_currently_active_timer_when_timer_is_active(pool: SqlitePool) {
     assert_eq!(response.status(), StatusCode::OK);
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let history = serde_json::from_slice::<Value>(body.iter().as_slice()).unwrap();
-    assert_eq!(history["region"], "north");
+    assert_eq!(history["region"], "ac1");
     assert_eq!(history["duration"], 1)
 }

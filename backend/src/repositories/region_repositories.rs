@@ -149,16 +149,16 @@ mod tests {
         let repo = SqliteRegionRepository::new(pool);
 
         // When
-        let result = repo.start_timer(Region::North).await;
+        let result = repo.start_timer(Region::Ac1).await;
         assert!(result.is_ok(), "Starting timer should succeed");
 
         // Then
         let history = repo
-            .get_history_by_region(Region::North)
+            .get_history_by_region(Region::Ac1)
             .await
             .expect("History should succeed");
         assert_eq!(history.len(), 1, "History should contain one entry");
-        assert_eq!(history[0].region, Region::North, "Region should be North");
+        assert_eq!(history[0].region, Region::Ac1, "Region should be Ac1");
         assert!(history[0].stop_time.is_none(), "Stop time should be None");
         assert!(history[0].duration.is_none(), "Duration should be None");
 
@@ -171,41 +171,41 @@ mod tests {
     ) -> sqlx::Result<()> {
         // Given
         let repo = SqliteRegionRepository::new(pool);
-        repo.start_timer(Region::North).await.unwrap();
+        repo.start_timer(Region::Ac1).await.unwrap();
 
         // When
-        let result = repo.start_timer(Region::North).await;
+        let result = repo.start_timer(Region::Ac1).await;
 
         // Then
         assert!(result.is_ok(), "Starting the same timer should succeed");
 
         // The previous timer should have stopped
-        let north_history = repo
-            .get_history_by_region(Region::North)
+        let ac1_history = repo
+            .get_history_by_region(Region::Ac1)
             .await
             .expect("History should succeed");
         assert_eq!(
-            north_history.len(),
+            ac1_history.len(),
             2,
-            "North history should contain two entries, one is stopped and one started"
+            "Ac1 history should contain two entries, one is stopped and one started"
         );
 
         // The timers are sorted descending. The "first one" is the currently running
         // timer and the "second one" is the stopped timer
         assert!(
-            north_history[0].stop_time.is_none(),
+            ac1_history[0].stop_time.is_none(),
             "First timer should be running"
         );
         assert!(
-            north_history[0].duration.is_none(),
+            ac1_history[0].duration.is_none(),
             "First timer should not have a duration"
         );
         assert!(
-            north_history[1].stop_time.is_some(),
+            ac1_history[1].stop_time.is_some(),
             "Second timer should be stopped"
         );
         assert!(
-            north_history[1].duration.is_some(),
+            ac1_history[1].duration.is_some(),
             "Second timer should have a duration"
         );
 
@@ -216,51 +216,51 @@ mod tests {
     async fn test_start_while_other_timer_already_running(pool: SqlitePool) -> sqlx::Result<()> {
         // Given
         let repo = SqliteRegionRepository::new(pool);
-        repo.start_timer(Region::North)
+        repo.start_timer(Region::Ac1)
             .await
             .expect("First timer should start normally");
 
         // When
-        let result = repo.start_timer(Region::South).await;
+        let result = repo.start_timer(Region::Ac2).await;
         assert!(result.is_ok(), "Starting another timer should succeed");
 
         // Then
-        // Verify the previous timer (North) was stopped
-        let north_history = repo
-            .get_history_by_region(Region::North)
+        // Verify the previous timer (Ac1) was stopped
+        let ac1_history = repo
+            .get_history_by_region(Region::Ac1)
             .await
             .expect("History should succeed");
         assert_eq!(
-            north_history.len(),
+            ac1_history.len(),
             1,
-            "North history should contain one entry"
+            "Ac1 history should contain one entry"
         );
         assert!(
-            north_history[0].stop_time.is_some(),
-            "North timer should be stopped"
+            ac1_history[0].stop_time.is_some(),
+            "Ac1 timer should be stopped"
         );
         assert!(
-            north_history[0].duration.is_some(),
-            "North timer should have a duration"
+            ac1_history[0].duration.is_some(),
+            "Ac1 timer should have a duration"
         );
 
-        // Verify the new timer (South) is running
-        let south_history = repo
-            .get_history_by_region(Region::South)
+        // Verify the new timer (Ac2) is running
+        let ac2_history = repo
+            .get_history_by_region(Region::Ac2)
             .await
             .expect("History should succeed");
         assert_eq!(
-            south_history.len(),
+            ac2_history.len(),
             1,
-            "South history should contain one entry"
+            "Ac2 history should contain one entry"
         );
         assert!(
-            south_history[0].stop_time.is_none(),
-            "South timer should be running"
+            ac2_history[0].stop_time.is_none(),
+            "Ac2 timer should be running"
         );
         assert!(
-            south_history[0].duration.is_none(),
-            "South timer should have no duration"
+            ac2_history[0].duration.is_none(),
+            "Ac2 timer should have no duration"
         );
 
         Ok(())
@@ -270,8 +270,7 @@ mod tests {
     async fn test_stop_timer(pool: SqlitePool) -> sqlx::Result<()> {
         // Given
         let repo = SqliteRegionRepository::new(pool);
-        let start = Utc::now();
-        repo.start_timer(Region::East)
+        repo.start_timer(Region::Ac3)
             .await
             .expect("Starting timer should succeed");
 
@@ -280,23 +279,25 @@ mod tests {
         tokio::time::sleep(std::time::Duration::from_millis(1100)).await;
 
         // When
-        let stop = Utc::now();
         let duration = repo
-            .stop_timer(Region::East)
+            .stop_timer(Region::Ac3)
             .await
             .expect("Stopping timer should not fail");
 
         // Then
-        assert!(duration >= 1, "Duration should be positiv");
+        let now = Utc::now();
+        assert!(duration >= 1, "Duration should be positive");
 
         // Verify the timer was stopped
         let history = repo
-            .get_history_by_region(Region::East)
+            .get_history_by_region(Region::Ac3)
             .await
             .expect("History should succeed");
         assert_eq!(history.len(), 1, "History should contain one entry");
-        assert_eq!(history[0].region, Region::East, "Region should be East");
+        assert_eq!(history[0].region, Region::Ac3, "Region should be Ac3");
         assert!(history[0].stop_time.is_some(), "Stop time should be set");
+        assert!(history[0].stop_time.unwrap() < now, "Stop time should before the current time");
+        assert!(history[0].stop_time.unwrap() > history[0].start_time, "Stop time should before the start time");
         assert_eq!(history[0].duration, Some(duration), "Duration should match");
 
         Ok(())
@@ -308,7 +309,7 @@ mod tests {
         let repo = SqliteRegionRepository::new(pool);
 
         // When
-        let result = repo.stop_timer(Region::North).await;
+        let result = repo.stop_timer(Region::Ac1).await;
 
         // Then
         assert!(
@@ -318,7 +319,7 @@ mod tests {
 
         // History should stay empty
         let history = repo
-            .get_history_by_region(Region::North)
+            .get_history_by_region(Region::Ac1)
             .await
             .expect("History should succeed");
         assert!(history.is_empty(), "History should be empty");
@@ -331,23 +332,23 @@ mod tests {
         // Given
         let repo = SqliteRegionRepository::new(pool);
 
-        repo.start_timer(Region::West).await.unwrap();
+        repo.start_timer(Region::Aa1).await.unwrap();
         tokio::time::sleep(std::time::Duration::from_millis(50)).await;
-        repo.stop_timer(Region::West).await.unwrap();
+        repo.stop_timer(Region::Aa1).await.unwrap();
 
-        repo.start_timer(Region::West).await.unwrap();
+        repo.start_timer(Region::Aa1).await.unwrap();
         tokio::time::sleep(std::time::Duration::from_millis(50)).await;
-        repo.stop_timer(Region::West).await.unwrap();
+        repo.stop_timer(Region::Aa1).await.unwrap();
 
         // When
         let history = repo
-            .get_history_by_region(Region::West)
+            .get_history_by_region(Region::Aa1)
             .await
             .expect("Fetching the history should succeed");
 
         // Then
         assert_eq!(history.len(), 2, "History should contain two entries");
-        assert_eq!(history[0].region, Region::West, "Region should be West");
+        assert_eq!(history[0].region, Region::Aa1, "Region should be Aa1");
         assert!(
             history[0].stop_time.is_some(),
             "First entry should be stopped"
