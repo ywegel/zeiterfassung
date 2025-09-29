@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { onMount } from "svelte";
+
 	enum Region {
 		North = "north",
 		East = "east",
@@ -9,6 +11,30 @@
 	let activeRegion: Region | null = $state(null);
 
 	let lastStopped: { region: Region; duration: number } | null = $state(null);
+
+	let currentDuration: number | null = $state(null);
+
+	onMount(async () => {
+		try {
+			const response = await fetch("/api/currently_active", {
+				method: "GET",
+				headers: { "Content-Type": "application/json" },
+			});
+
+			if (!response.ok) {
+				throw new Error("Failed to fetch currently active timer");
+			}
+
+			const data = await response.json();
+			if (data.region !== null && data.duration !== null) {
+				activeRegion = data.region as Region;
+				currentDuration = data.duration;
+			}
+		} catch (error) {
+			console.error("Error fetching currently active timer:", error);
+			alert("Failed to fetch active timer. Please try again.");
+		}
+	});
 
 	async function startTimer(region: Region) {
 		if (activeRegion !== null) {
@@ -60,10 +86,17 @@
 		} else {
 			startTimer(region);
 		}
+		currentDuration = null;
 	}
 </script>
 
 <div class="flex min-h-screen flex-col items-center justify-center bg-gray-100 p-4">
+	{#if activeRegion && currentDuration !== null}
+		<div class="mb-6 text-center text-lg text-gray-800">
+			Active timer: {activeRegion.charAt(0).toUpperCase() + activeRegion.slice(1)}, Duration: {currentDuration}
+			seconds
+		</div>
+	{/if}
 	<div class="grid w-full max-w-md grid-cols-2 gap-4">
 		<button
 			class="rounded-lg py-8 text-2xl font-bold transition-colors duration-200 {activeRegion ===
