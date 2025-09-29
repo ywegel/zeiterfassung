@@ -31,24 +31,30 @@ mod tests {
 
     #[test]
     fn test_load_configuration_success() {
-        let config = load_configuration(Some("./tests/resources/valid.env"))
-            .expect("Failed to load valid configuration");
-        assert_eq!(
-            config.database_url,
-            "postgres://user:pass@localhost:5432/db"
-        );
-        assert_eq!(config.application_port, 8080);
+        temp_env::with_vars_unset(vec!["DATABASE_URL", "APPLICATION_PORT"], || {
+            let config = load_configuration(Some("./tests/resources/valid.env"))
+                .expect("Failed to load valid configuration");
+            assert_eq!(
+                config.database_url,
+                "postgres://user:pass@localhost:5432/db"
+            );
+            assert_eq!(config.application_port, 8080);
+        })
     }
 
     #[test]
     fn test_load_configuration_invalid_env() {
-        let result = load_configuration(Some("./tests/resources/invalid.env"));
-        assert!(matches!(result, Err(ConfigurationError::Envy(_))));
+        temp_env::with_vars_unset(vec!["DATABASE_URL", "APPLICATION_PORT"], || {
+            let result = load_configuration(Some("./tests/resources/invalid.env"));
+            assert!(matches!(result, Err(ConfigurationError::Envy(_))));
+        })
     }
 
     #[test]
     fn test_load_configuration_missing_file() {
-        let result = load_configuration(Some("./tests/resources/nonexistent.env"));
-        assert!(matches!(result, Err(ConfigurationError::Dotenv(_))));
+        temp_env::with_vars_unset(vec!["DATABASE_URL", "APPLICATION_PORT"], || {
+            let result = load_configuration(Some("./tests/resources/nonexistent.env"));
+            assert!(matches!(result, Err(ConfigurationError::Dotenv(_))));
+        })
     }
 }

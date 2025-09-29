@@ -28,3 +28,4 @@ log = "0.4.28"
 http-body-util = "0.1.0"
 tower = { version = "0.5.2", features = ["util"] }
 serde_json = "1.0.145"
+temp-env = "0.3.6"
