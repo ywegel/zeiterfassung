@@ -2,16 +2,16 @@
 	import { onMount } from "svelte";
 
 	enum Region {
-		North = "north",
-		East = "east",
-		West = "west",
-		South = "south",
+		Aa1 = "aa1",
+		Aa2 = "aa2",
+		Aa3 = "aa3",
+		Ac1 = "ac1",
+		Ac2 = "ac2",
+		Ac3 = "ac3",
 	}
 
 	let activeRegion: Region | null = $state(null);
-
 	let lastStopped: { region: Region; duration: number } | null = $state(null);
-
 	let currentDuration: number | null = $state(null);
 
 	onMount(async () => {
@@ -93,52 +93,68 @@
 <div class="flex min-h-screen flex-col items-center justify-center bg-gray-100 p-4">
 	{#if activeRegion && currentDuration !== null}
 		<div class="mb-6 text-center text-lg text-gray-800">
-			Active timer: {activeRegion.charAt(0).toUpperCase() + activeRegion.slice(1)}, Duration: {currentDuration}
-			seconds
+			Active timer: {activeRegion.toUpperCase()}, Duration: {currentDuration} seconds
 		</div>
 	{/if}
-	<div class="grid w-full max-w-md grid-cols-2 gap-4">
+	<div class="grid w-full max-w-md grid-cols-2 grid-rows-3 gap-4">
 		<button
 			class="rounded-lg py-8 text-2xl font-bold transition-colors duration-200 {activeRegion ===
-			Region.North
+			Region.Aa1
 				? 'bg-blue-500 text-white'
 				: 'bg-gray-200 text-gray-800'}"
-			onclick={() => toggleTimer(Region.North)}
+			onclick={() => toggleTimer(Region.Aa1)}
 		>
-			North
+			AA1
 		</button>
 		<button
 			class="rounded-lg py-8 text-2xl font-bold transition-colors duration-200 {activeRegion ===
-			Region.East
+			Region.Aa2
 				? 'bg-green-500 text-white'
 				: 'bg-gray-200 text-gray-800'}"
-			onclick={() => toggleTimer(Region.East)}
+			onclick={() => toggleTimer(Region.Aa2)}
 		>
-			East
+			AA2
 		</button>
 		<button
 			class="rounded-lg py-8 text-2xl font-bold transition-colors duration-200 {activeRegion ===
-			Region.West
+			Region.Aa3
 				? 'bg-red-500 text-white'
 				: 'bg-gray-200 text-gray-800'}"
-			onclick={() => toggleTimer(Region.West)}
+			onclick={() => toggleTimer(Region.Aa3)}
 		>
-			West
+			AA3
 		</button>
 		<button
 			class="rounded-lg py-8 text-2xl font-bold transition-colors duration-200 {activeRegion ===
-			Region.South
+			Region.Ac1
 				? 'bg-yellow-500 text-white'
 				: 'bg-gray-200 text-gray-800'}"
-			onclick={() => toggleTimer(Region.South)}
+			onclick={() => toggleTimer(Region.Ac1)}
 		>
-			South
+			AC1
+		</button>
+		<button
+			class="rounded-lg py-8 text-2xl font-bold transition-colors duration-200 {activeRegion ===
+			Region.Ac2
+				? 'bg-purple-500 text-white'
+				: 'bg-gray-200 text-gray-800'}"
+			onclick={() => toggleTimer(Region.Ac2)}
+		>
+			AC2
+		</button>
+		<button
+			class="rounded-lg py-8 text-2xl font-bold transition-colors duration-200 {activeRegion ===
+			Region.Ac3
+				? 'bg-orange-500 text-white'
+				: 'bg-gray-200 text-gray-800'}"
+			onclick={() => toggleTimer(Region.Ac3)}
+		>
+			AC3
 		</button>
 	</div>
 	{#if lastStopped}
 		<div class="mt-6 text-lg text-gray-800">
-			Last stopped: {lastStopped.region.charAt(0).toUpperCase() +
-				lastStopped.region.slice(1)}, Duration: {lastStopped.duration} seconds
+			Last stopped: {lastStopped.region.toUpperCase()}, Duration: {lastStopped.duration} seconds
 		</div>
 	{/if}
 </div>
