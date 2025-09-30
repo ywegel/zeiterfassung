@@ -1,0 +1,32 @@
+name: Frontend Pull Request
+
+on:
+  pull_request:
+    branches: [ master, main ]
+    paths:
+      - 'frontend/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  RUSTFLAGS: "-Dwarnings"
+
+defaults:
+  run:
+    working-directory: ./frontend
+
+jobs:
+  autofix-prettier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - run: |
+          yarn
+          yarn prettier . --write
+      - uses: autofix-ci/action@v1
+        with:
+          commit-message: "Apply Prettier format"

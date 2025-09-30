@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT region, start_time, stop_time FROM region_history WHERE region = 'ac1'",
+  "describe": {
+    "columns": [
+      {
+        "name": "region",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "start_time",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "stop_time",
+        "ordinal": 2,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "15f52620202efc3b571fe36e8d1e8a54934045ae51d4db0a3f998a3d800da8ac"
+}

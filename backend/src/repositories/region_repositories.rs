@@ -230,11 +230,7 @@ mod tests {
             .get_history_by_region(Region::Ac1)
             .await
             .expect("History should succeed");
-        assert_eq!(
-            ac1_history.len(),
-            1,
-            "Ac1 history should contain one entry"
-        );
+        assert_eq!(ac1_history.len(), 1, "Ac1 history should contain one entry");
         assert!(
             ac1_history[0].stop_time.is_some(),
             "Ac1 timer should be stopped"
@@ -249,11 +245,7 @@ mod tests {
             .get_history_by_region(Region::Ac2)
             .await
             .expect("History should succeed");
-        assert_eq!(
-            ac2_history.len(),
-            1,
-            "Ac2 history should contain one entry"
-        );
+        assert_eq!(ac2_history.len(), 1, "Ac2 history should contain one entry");
         assert!(
             ac2_history[0].stop_time.is_none(),
             "Ac2 timer should be running"
@@ -296,8 +288,14 @@ mod tests {
         assert_eq!(history.len(), 1, "History should contain one entry");
         assert_eq!(history[0].region, Region::Ac3, "Region should be Ac3");
         assert!(history[0].stop_time.is_some(), "Stop time should be set");
-        assert!(history[0].stop_time.unwrap() < now, "Stop time should before the current time");
-        assert!(history[0].stop_time.unwrap() > history[0].start_time, "Stop time should before the start time");
+        assert!(
+            history[0].stop_time.unwrap() < now,
+            "Stop time should before the current time"
+        );
+        assert!(
+            history[0].stop_time.unwrap() > history[0].start_time,
+            "Stop time should before the start time"
+        );
         assert_eq!(history[0].duration, Some(duration), "Duration should match");
 
         Ok(())
