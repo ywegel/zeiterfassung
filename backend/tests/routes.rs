@@ -81,7 +81,7 @@ async fn test_start_timer(pool: SqlitePool) {
     assert_eq!(history.len(), 1);
     assert_eq!(history[0].region, "ac1");
     assert!(history[0].stop_time.is_none());
-    assert!(history[0].start_time.len() > 0);
+    assert!(!history[0].start_time.is_empty());
 }
 
 #[sqlx::test]
@@ -138,7 +138,7 @@ async fn test_stop_timer(pool: SqlitePool) {
     assert_eq!(history.len(), 1);
     assert_eq!(history[0].region, "ac1");
     assert!(history[0].stop_time.is_some());
-    assert!(history[0].start_time.len() > 0);
+    assert!(!history[0].start_time.is_empty());
     assert!(history[0].duration.is_some());
     assert!(history[0].duration.unwrap() >= 1);
 }

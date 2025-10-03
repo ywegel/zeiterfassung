@@ -1,0 +1,129 @@
+name: Backend Pull Request
+
+on:
+  pull_request:
+    branches: [ master, main ]
+    paths:
+      - 'backend/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  RUSTFLAGS: "-Dwarnings"
+  SCCACHE_GHA_ENABLED: "true"
+  RUSTC_WRAPPER: "sccache"
+
+defaults:
+  run:
+    working-directory: ./backend
+
+jobs:
+  fmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install nightly toolchain with rustfmt
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+          components: rustfmt
+
+      - name: Run cargo fmt
+        run: cargo fmt --all -- --check
+
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
+
+      - name: Run cargo check
+        run: cargo check --locked
+
+#  check_sqlx_metadata:
+#    name: Check sqlx metadata
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v4
+#
+#      - name: Install stable toolchain
+#        uses: actions-rs/toolchain@v1
+#        with:
+#          profile: minimal
+#          toolchain: stable
+#          override: true
+#
+#      - name: Run sccache-cache
+#        uses: mozilla-actions/sccache-action@v0.0.9
+#
+#      - name: Install the sqlx cli
+#        run: cargo install sqlx-cli
+#
+#      # See: https://github.com/launchbadge/sqlx/blob/064d649abdfd1742e5fdcc20176a6b415b9c25d3/sqlx-cli/README.md#enable-building-in-offline-mode-with-query
+#      # if this step fails, run "cargo sqlx prepare -- --tests --lib"
+#      - name: Validate the .sqlx metadata
+#        run: cargo sqlx prepare --check -- --tests --lib
+
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    needs:
+      - fmt
+      - check
+#      - check_sqlx_metadata
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
+
+      - name: Run cargo test
+        run: cargo test --locked
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    needs:
+      - fmt
+      - check
+#      - check_sqlx_metadata
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install stable toolchain with clippy
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: clippy
+
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
+
+      - name: Run cargo clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings

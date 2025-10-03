@@ -1,7 +1,7 @@
 #![forbid(unsafe_code)]
 
 pub mod configuration;
-mod db;
+pub mod db;
 mod error;
 mod models;
 mod repositories;
@@ -15,7 +15,6 @@ use axum::routing::post;
 use tower_http::services::ServeDir;
 use tower_http::services::ServeFile;
 
-pub use crate::db::connect_to_database;
 pub use crate::repositories::region_repositories::RegionRepository;
 pub use crate::repositories::region_repositories::SqliteRegionRepository;
 use crate::routes::currently_active;

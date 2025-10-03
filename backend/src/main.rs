@@ -8,7 +8,6 @@ use backend::app;
 use backend::configuration::Configuration;
 use backend::configuration::ConfigurationError;
 use backend::configuration::load_configuration;
-use backend::connect_to_database;
 
 #[derive(thiserror::Error, Debug)]
 pub enum AppError {
@@ -51,7 +50,7 @@ async fn main() -> Result<(), AppError> {
 }
 
 async fn api_context(config: &Configuration) -> Result<ApiContext, AppError> {
-    let pool = connect_to_database(&config.database_url).await?;
+    let pool = backend::db::connect_to_database(&config.database_url).await?;
     let region_repository = Arc::new(SqliteRegionRepository::new(pool));
     Ok(ApiContext { region_repository })
 }

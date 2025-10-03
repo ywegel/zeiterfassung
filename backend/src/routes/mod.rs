@@ -17,8 +17,8 @@ pub async fn start_timer(
     Path(region): Path<Region>,
     State(context): State<ApiContext>,
 ) -> Result<(), AppError> {
-    let result = context.region_repository.start_timer(region).await?;
-    Ok(result)
+    context.region_repository.start_timer(region).await?;
+    Ok(())
 }
 
 #[derive(serde::Serialize)]
