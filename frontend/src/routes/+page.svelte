@@ -93,7 +93,7 @@
 	{/if}
 
 	<div class="grid w-full max-w-md grid-cols-2 grid-rows-3 gap-4">
-		{#each regions as region (region)}
+		{#each regions as region}
 			<RegionButton {region} onToggle={toggleTimer} />
 		{/each}
 	</div>
