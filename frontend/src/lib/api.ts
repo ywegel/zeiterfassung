@@ -1,4 +1,4 @@
-import type { Region } from './regions';
+import type { Region } from "./regions";
 
 export interface StopTimerResponse {
 	duration: number;
@@ -19,7 +19,7 @@ export async function fetchCurrentlyActive(): Promise<CurrentlyActiveResponse> {
 		throw new Error("Failed to fetch currently active timer");
 	}
 
-	return response.json()
+	return response.json();
 }
 
 export async function startTimer(region: Region): Promise<void> {
