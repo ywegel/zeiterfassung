@@ -3,21 +3,13 @@
 	import RegionButton from "$lib/components/RegionButton.svelte";
 	import { Region } from "$lib/regions.ts";
 	import { appState } from "$lib/state.svelte.ts";
+	import { fetchCurrentlyActive, startTimer, stopTimer } from "$lib/api.ts";
 
 	let regions: Region[] = Object.values(Region);
 
 	async function initializeApp() {
 		try {
-			const response = await fetch("/api/currently_active", {
-				method: "GET",
-				headers: { "Content-Type": "application/json" },
-			});
-
-			if (!response.ok) {
-				throw new Error("Failed to fetch currently active timer");
-			}
-
-			const data = await response.json();
+			const data = await fetchCurrentlyActive();
 			if (data.region !== null && data.duration !== null) {
 				appState.activeRegion = data.region as Region;
 				appState.currentDuration = data.duration;
@@ -28,21 +20,14 @@
 		}
 	}
 
-	async function startTimer(region: Region) {
+	async function handleStart(region: Region) {
 		if (appState.activeRegion !== null) {
 			alert("Another timer is already running. Stop it first.");
 			return;
 		}
 
 		try {
-			const response = await fetch(`/api/${region}/start`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-			});
-
-			if (!response.ok) {
-				throw new Error(`Failed to start timer for ${region}`);
-			}
+			await startTimer(region);
 
 			appState.activeRegion = region;
 		} catch (error) {
@@ -51,18 +36,9 @@
 		}
 	}
 
-	async function stopTimer(region: Region) {
+	async function handleStop(region: Region) {
 		try {
-			const response = await fetch(`/api/${region}/stop`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-			});
-
-			if (!response.ok) {
-				throw new Error(`Failed to stop timer for ${region}`);
-			}
-
-			const data = await response.json();
+			const data = await stopTimer(region);
 			console.log("Stop response:", data);
 			appState.lastStopped = { region, duration: data.duration };
 			appState.activeRegion = null;
@@ -74,9 +50,9 @@
 
 	function toggleTimer(region: Region) {
 		if (appState.activeRegion === region) {
-			stopTimer(region);
+			handleStop(region);
 		} else {
-			startTimer(region);
+			handleStart(region);
 		}
 		appState.currentDuration = null;
 	}
