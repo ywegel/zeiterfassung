@@ -552,10 +552,10 @@ async fn test_get_daily_history_ignores_yesterdays_entries(pool: SqlitePool) {
     );
     assert_eq!(
         daily_duration[1].region, "ac1",
-        "Second region should be Ac2"
+        "Second region should be Ac1"
     );
     assert_eq!(
         daily_duration[1].summed_duration, 2,
-        "Ac2 duration should be 2 seconds"
+        "Ac1 duration should be 2 seconds"
     );
 }

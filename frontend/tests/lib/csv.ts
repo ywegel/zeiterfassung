@@ -14,11 +14,13 @@ describe("generateDailySummaryCsv", () => {
 
 		const result = generateDailySummaryCsv(data);
 
-		const expected = `Region,Summed Duration (seconds)
-			Aa1,3600
-			Aa2,1800
-			Aa3,7200
-			Ac1,0`;
+		const expected = [
+			"Region,Summed Duration (seconds)",
+			"Aa1,3600",
+			"Aa2,1800",
+			"Aa3,7200",
+			"Ac1,0",
+		].join("\n");
 
 		expect(result).toBe(expected);
 	});

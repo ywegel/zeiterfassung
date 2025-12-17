@@ -19,7 +19,15 @@ pub enum Region {
 
 impl Display for Region {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        let s = match self {
+            Region::Aa1 => "aa1",
+            Region::Aa2 => "aa2",
+            Region::Aa3 => "aa3",
+            Region::Ac1 => "ac1",
+            Region::Ac2 => "ac2",
+            Region::Ac3 => "ac3",
+        };
+        write!(f, "{}", s)
     }
 }
 

@@ -26,7 +26,9 @@
 			() => alert("CSV copied to clipboard!"),
 			(err) => {
 				console.error("Failed to copy CSV:", err);
-				alert("Failed to copy CSV");
+				alert(
+					"Failed to copy CSV. Please check your browser's clipboard permissions and try again."
+				);
 			}
 		);
 	}
@@ -49,15 +51,15 @@
 				</button>
 			</div>
 
-			<!-- Tabel -->
+			<!-- Table -->
 			<div class="overflow-x-auto">
 				<table class="mx-auto w-full max-w-2xl rounded-lg bg-white shadow-md">
 					<thead>
 						<tr class="bg-blue-600 text-white">
 							<th class="px-4 py-3 text-left font-semibold">Region</th>
 							<th class="px-4 py-3 text-left font-semibold"
-								>Summed Duration (seconds)</th
-							>
+								>Summed Duration (seconds)
+							</th>
 						</tr>
 					</thead>
 					<tbody>
