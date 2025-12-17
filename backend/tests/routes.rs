@@ -538,10 +538,7 @@ async fn test_get_daily_history_ignores_yesterdays_entries(pool: SqlitePool) {
         "Should only return entries for today"
     );
     // Nothing of region aa2 should be present
-    assert!(matches!(
-        daily_duration.iter().find(|entry| entry.region == "aa2"),
-        None
-    ));
+    assert!(!daily_duration.iter().any(|entry| entry.region == "aa2"));
     assert_eq!(
         daily_duration[0].region, "aa1",
         "First region should be Aa1"
