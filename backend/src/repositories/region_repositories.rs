@@ -5,6 +5,7 @@ use sqlx::SqlitePool;
 
 use crate::models::region::CurrentlyActiveRegion;
 use crate::models::region::Region;
+use crate::models::region_history::DailyRegionSummary;
 use crate::models::region_history::RegionHistory;
 
 #[derive(thiserror::Error, Debug)]
@@ -23,6 +24,7 @@ pub trait RegionRepository: Send + Sync {
         &self,
         region: Region,
     ) -> Result<Vec<RegionHistory>, RepositoryError>;
+    async fn get_daily_summary(&self) -> Result<Vec<DailyRegionSummary>, RepositoryError>;
     async fn currently_active_timer(&self) -> Result<CurrentlyActiveRegion, RepositoryError>;
 }
 
@@ -104,6 +106,22 @@ impl RegionRepository for SqliteRegionRepository {
             "#,
         )
         .bind(&region)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(result)
+    }
+
+    async fn get_daily_summary(&self) -> Result<Vec<DailyRegionSummary>, RepositoryError> {
+        let result: Vec<DailyRegionSummary> = sqlx::query_as(
+            r#"
+            SELECT region, SUM(duration) as 'summed_duration'
+            FROM region_history
+            WHERE DATE(start_time) = DATE('now')
+            GROUP BY region
+            ORDER BY region ASC
+            "#,
+        )
         .fetch_all(&self.pool)
         .await?;
 
@@ -361,5 +379,117 @@ mod tests {
         );
 
         Ok(())
+    }
+
+    #[sqlx::test]
+    async fn test_get_daily_history_with_one_region(pool: SqlitePool) {
+        // Given
+        let repo = SqliteRegionRepository::new(pool);
+
+        repo.start_timer(Region::Aa1).await.unwrap();
+        tokio::time::sleep(std::time::Duration::from_millis(1010)).await;
+        repo.stop_timer(Region::Aa1).await.unwrap();
+
+        repo.start_timer(Region::Aa1).await.unwrap();
+        tokio::time::sleep(std::time::Duration::from_millis(1010)).await;
+        repo.stop_timer(Region::Aa1).await.unwrap();
+
+        // When
+        let daily_duration = repo.get_daily_summary().await.unwrap();
+
+        // Then
+        assert_eq!(daily_duration.len(), 1);
+        assert_eq!(daily_duration[0].summed_duration, 2);
+        assert_eq!(daily_duration[0].region, Region::Aa1);
+    }
+
+    #[sqlx::test]
+    async fn test_get_daily_history(pool: SqlitePool) {
+        // Given
+        let repo = SqliteRegionRepository::new(pool);
+
+        // Ac2 before Aa1 to test the region ASC sorting
+        repo.start_timer(Region::Ac2).await.unwrap();
+        tokio::time::sleep(std::time::Duration::from_millis(1010)).await;
+        repo.stop_timer(Region::Ac2).await.unwrap();
+
+        repo.start_timer(Region::Aa1).await.unwrap();
+        tokio::time::sleep(std::time::Duration::from_millis(1010)).await;
+        repo.stop_timer(Region::Aa1).await.unwrap();
+
+        // When
+        let daily_duration = repo.get_daily_summary().await.unwrap();
+
+        // Then
+        assert_eq!(daily_duration.len(), 2);
+        assert_eq!(daily_duration[0].summed_duration, 1);
+        assert_eq!(daily_duration[0].region, Region::Aa1);
+        assert_eq!(daily_duration[1].summed_duration, 1);
+        assert_eq!(daily_duration[1].region, Region::Ac2);
+    }
+
+    #[sqlx::test]
+    async fn test_get_daily_history_ignores_old_entries(pool: SqlitePool) {
+        // Given
+        let repo = SqliteRegionRepository::new(pool);
+
+        // Insert two entries for today
+        repo.start_timer(Region::Aa1).await.unwrap();
+        tokio::time::sleep(std::time::Duration::from_millis(1010)).await;
+        repo.stop_timer(Region::Aa1).await.unwrap();
+
+        repo.start_timer(Region::Ac2).await.unwrap();
+        tokio::time::sleep(std::time::Duration::from_millis(2010)).await;
+        repo.stop_timer(Region::Ac2).await.unwrap();
+
+        // Insert an entry for yesterday
+        let yesterday = Utc::now()
+            .checked_sub_days(chrono::Days::new(1))
+            .unwrap()
+            .date_naive();
+        let start_time: DateTime<Utc> = yesterday.and_hms_opt(2, 0, 0).unwrap().and_utc(); // 02:00:00 UTC
+        let stop_time: DateTime<Utc> = start_time + chrono::Duration::hours(1); // 03:00:00 UTC
+
+        sqlx::query(
+            r#"
+        INSERT INTO region_history (region, start_time, stop_time, duration)
+        VALUES (?1, ?2, ?3, ?4)
+        "#,
+        )
+        .bind(Region::Aa1)
+        .bind(start_time)
+        .bind(stop_time)
+        .bind(3600) // 1 hour = 60 * 60 seconds
+        .execute(&repo.pool)
+        .await
+        .unwrap();
+
+        // When
+        let daily_history = repo.get_daily_summary().await.unwrap();
+
+        // Then
+        assert_eq!(
+            daily_history.len(),
+            2,
+            "Should only return entries for today"
+        );
+        assert_eq!(
+            daily_history[0].region,
+            Region::Aa1,
+            "First region should be Aa1"
+        );
+        assert_eq!(
+            daily_history[0].summed_duration, 1,
+            "Aa1 duration should be 1 second"
+        );
+        assert_eq!(
+            daily_history[1].region,
+            Region::Ac2,
+            "Second region should be Ac2"
+        );
+        assert_eq!(
+            daily_history[1].summed_duration, 2,
+            "Ac2 duration should be 2 seconds"
+        );
     }
 }

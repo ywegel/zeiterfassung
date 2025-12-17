@@ -439,3 +439,120 @@ async fn test_currently_active_timer_when_timer_is_active(pool: SqlitePool) {
     assert_eq!(history["region"], "ac1");
     assert_eq!(history["duration"], 1)
 }
+
+#[derive(Debug, serde::Deserialize)]
+pub struct TestDailyRegionHistory {
+    pub region: String,
+    pub summed_duration: i64,
+}
+
+#[sqlx::test]
+async fn test_get_daily_history_ignores_yesterdays_entries(pool: SqlitePool) {
+    // Given
+    let application_pool = pool.clone();
+    let mut app = app(setup_api_context(application_pool));
+
+    // Insert test data for today
+    app.call_request(
+        Request::builder()
+            .uri("/api/aa1/start")
+            .method("POST")
+            .header("Content-Type", "application/json")
+            .body(Body::empty())
+            .unwrap(),
+    )
+    .await;
+    tokio::time::sleep(tokio::time::Duration::from_millis(1010)).await;
+    app.call_request(
+        Request::builder()
+            .uri("/api/aa1/stop")
+            .method("POST")
+            .header("Content-Type", "application/json")
+            .body(Body::empty())
+            .unwrap(),
+    )
+    .await;
+
+    app.call_request(
+        Request::builder()
+            .uri("/api/ac1/start")
+            .method("POST")
+            .header("Content-Type", "application/json")
+            .body(Body::empty())
+            .unwrap(),
+    )
+    .await;
+    tokio::time::sleep(tokio::time::Duration::from_millis(2010)).await;
+    app.call_request(
+        Request::builder()
+            .uri("/api/ac1/stop")
+            .method("POST")
+            .header("Content-Type", "application/json")
+            .body(Body::empty())
+            .unwrap(),
+    )
+    .await;
+
+    // Insert an entry for yesterday
+    let yesterday = Utc::now()
+        .checked_sub_days(chrono::Days::new(1))
+        .unwrap()
+        .date_naive();
+    let start_time: DateTime<Utc> = yesterday.and_hms_opt(2, 0, 0).unwrap().and_utc(); // 02:00:00 UTC
+    let stop_time: DateTime<Utc> = start_time + chrono::Duration::hours(1); // 03:00:00 UTC
+
+    sqlx::query(
+        r#"
+        INSERT INTO region_history (region, start_time, stop_time, duration)
+        VALUES (?1, ?2, ?3, ?4)
+        "#,
+    )
+    .bind("aa2")
+    .bind(start_time)
+    .bind(stop_time)
+    .bind(3600)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    // When
+    let response = app
+        .call_request(
+            Request::builder()
+                .uri("/api/daily_history")
+                .method("GET")
+                .header("Content-Type", "application/json")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let daily_duration =
+        serde_json::from_slice::<Vec<TestDailyRegionHistory>>(body.iter().as_slice()).unwrap();
+
+    // Then
+    assert_eq!(
+        daily_duration.len(),
+        2,
+        "Should only return entries for today"
+    );
+    // Nothing of region aa2 should be present
+    assert!(!daily_duration.iter().any(|entry| entry.region == "aa2"));
+    assert_eq!(
+        daily_duration[0].region, "aa1",
+        "First region should be Aa1"
+    );
+    assert_eq!(
+        daily_duration[0].summed_duration, 1,
+        "Aa1 duration should be 1 second"
+    );
+    assert_eq!(
+        daily_duration[1].region, "ac1",
+        "Second region should be Ac1"
+    );
+    assert_eq!(
+        daily_duration[1].summed_duration, 2,
+        "Ac1 duration should be 2 seconds"
+    );
+}

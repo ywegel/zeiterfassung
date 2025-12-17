@@ -16,7 +16,7 @@ defaults:
     working-directory: ./frontend
 
 jobs:
-  autofix-prettier:
+  prettier:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,7 +31,7 @@ jobs:
 
   lint:
     runs-on: ubuntu-latest
-    needs: autofix-prettier
+    needs: prettier
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

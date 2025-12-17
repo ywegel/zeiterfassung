@@ -1,3 +1,5 @@
+mod daily_summary;
+
 use axum::Json;
 use axum::extract::Path;
 use axum::extract::State;
@@ -7,12 +9,12 @@ use crate::error::AppError;
 use crate::models::region::CurrentlyActiveRegion;
 use crate::models::region::Region;
 use crate::models::region_history::RegionHistory;
+pub use crate::routes::daily_summary::daily_history;
 
 pub async fn hello_world() -> &'static str {
     "Hello, World!"
 }
 
-#[axum_macros::debug_handler]
 pub async fn start_timer(
     Path(region): Path<Region>,
     State(context): State<ApiContext>,

@@ -9,6 +9,11 @@ export interface CurrentlyActiveResponse {
 	duration: number | null;
 }
 
+export interface DailySummary {
+	region: Region;
+	summed_duration: number;
+}
+
 export async function fetchCurrentlyActive(): Promise<CurrentlyActiveResponse> {
 	const response = await fetch("/api/currently_active", {
 		method: "GET",
@@ -41,6 +46,19 @@ export async function stopTimer(region: Region): Promise<StopTimerResponse> {
 
 	if (!response.ok) {
 		throw new Error(`Failed to stop timer for ${region}`);
+	}
+
+	return response.json();
+}
+
+export async function fetchDailyHistory(): Promise<DailySummary[]> {
+	const response = await fetch("/api/daily_history", {
+		method: "GET",
+		headers: { "Content-Type": "application/json" },
+	});
+
+	if (!response.ok) {
+		throw new Error("Failed to fetch daily history");
 	}
 
 	return response.json();

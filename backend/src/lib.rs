@@ -18,6 +18,7 @@ use tower_http::services::ServeFile;
 pub use crate::repositories::region_repositories::RegionRepository;
 pub use crate::repositories::region_repositories::SqliteRegionRepository;
 use crate::routes::currently_active;
+use crate::routes::daily_history;
 use crate::routes::history_by_region;
 use crate::routes::start_timer;
 use crate::routes::stop_timer;
@@ -32,11 +33,12 @@ pub fn app(api_context: ApiContext) -> Router {
         ServeDir::new("./static").fallback(ServeFile::new("./static/index.html"));
 
     Router::new()
-        .route("/hello_world", axum::routing::get(routes::hello_world))
+        .route("/hello_world", get(routes::hello_world))
         .route("/api/{region}/start", post(start_timer))
         .route("/api/{region}/stop", post(stop_timer))
         .route("/api/{region}/history", get(history_by_region))
         .route("/api/currently_active", get(currently_active))
+        .route("/api/daily_history", get(daily_history))
         .with_state(api_context)
         .fallback_service(static_frontend_files)
 }
