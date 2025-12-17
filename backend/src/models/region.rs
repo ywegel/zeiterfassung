@@ -1,3 +1,6 @@
+use std::fmt::Display;
+use std::fmt::Formatter;
+
 use serde::Deserialize;
 use serde::Serialize;
 use sqlx::Type;
@@ -12,6 +15,12 @@ pub enum Region {
     Ac1,
     Ac2,
     Ac3,
+}
+
+impl Display for Region {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 #[derive(Debug, Serialize)]

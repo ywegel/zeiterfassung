@@ -11,3 +11,9 @@ pub struct RegionHistory {
     pub stop_time: Option<DateTime<Utc>>,
     pub duration: Option<i64>,
 }
+
+#[derive(Debug, Serialize, sqlx::FromRow)]
+pub struct DailyRegionSummary {
+    pub region: Region,
+    pub summed_duration: i64,
+}
